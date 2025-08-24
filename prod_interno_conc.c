@@ -15,9 +15,9 @@ OBS: os arquivos de entrada serão gerados pelo programa sequencial "prod_intern
 #include <stdio.h>
 #include <stdlib.h> 
 #include <pthread.h> 
-//#include "timer.h"
+#include "timer.h"
 
-//#define VERSOES    //Descomentar o define para comparar os resultados sequenciais e concorrentes
+#define VERSOES    //Descomentar o define para comparar os resultados sequenciais e concorrentes
 
 //Vetores de elementos
 float *vet1, *vet2;
@@ -50,6 +50,8 @@ void *ProdIntVetores (void *args) {
     ret = (double*) malloc(sizeof(double));
     if (ret!=NULL) *ret = prod_int_local;
     else printf("--ERRO: malloc() thread\n");
+
+    free(arg); //Libera a memória dos argumentos
     pthread_exit((void*) ret);
 }
 
@@ -58,14 +60,14 @@ int main(int argc, char *argv[]) {
     short int nthreads;  //Numero de threads 
     FILE *arq;  //Arquivo de entrada
     size_t ret;  //Retorno da funcao de leitura no arquivo de entrada
-    double prod_int_ori;  //Produto interno registrado no arquivo
+    double prod_int_arq;  //Produto interno registrado no arquivo
     #ifdef VERSOES
-    float soma_seq, soma_seq_blocos; //resultados das somas adicionais
-    float soma1, soma2; //auxiliares para a soma sequencial alternada
+    double prod_int_seq; //Resultado do produto interno feito de forma sequencial
     #endif
     double prod_int_conc_global;   //Resultado do produto interno concorrente
     double *soma_retorno_threads;  //Auxiliar para retorno das threads
     double variacao_relativa;  //Variação relativa entre o resultado sequencial e concorrente
+    double start, end, delta;   //Variáveis para controle de tempo
 
     pthread_t *tid_sistema;  //Vetor de identificadores das threads no sistema
 
@@ -106,6 +108,23 @@ int main(int argc, char *argv[]) {
     tid_sistema = (pthread_t *) malloc(sizeof(pthread_t) * nthreads);
     if(tid_sistema==NULL) { printf("--ERRO: malloc()\n"); exit(-1); }
 
+    #ifdef VERSOES
+    GET_TIME(start);  //Começando a contagem de tempo para o cálculo sequencial
+    //Primeiramente, calculando o produto interno de forma sequencial
+    prod_int_seq = 0;
+    for(int t=0; t<n; t++) {
+        prod_int_seq += vet1[t] * vet2[t];
+    }
+
+    GET_TIME(end);  //Terminando a contagem de tempo para o cálculo sequencial
+    delta = end-start;
+
+    printf("\n");
+    printf("Prod interno sequencial = %.26lf\n", prod_int_seq);
+    printf("Tempo (sequencial): %lf\n", delta);
+    #endif
+
+    GET_TIME(start);  //Começando a contagem de tempo para o cálculo concorrente
     //Criando as threads
     for(long int i=0; i<nthreads; i++) {
         t_args *args;
@@ -121,24 +140,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    #ifdef VERSOES
-    //soma sequencial de traz para frente
-    soma_seq = 0;
-    for(int t=n-1; t>=0; t--) {
-        soma_seq += vet[t];
-    }
-    //soma sequencial bloco (== soma com 2 threads)
-    soma1=0;
-    for(int t=0; t<n/2; t++) {
-        soma1 += vet[t];
-    }
-    soma2=0;
-    for(int t=n/2; t<n; t++) {
-        soma2 += vet[t];
-    }
-    soma_seq_blocos = soma1 + soma2;
-    #endif
-
     //Esperando todas as threads terminarem e calculando a soma total das threads
     prod_int_conc_global=0;
     for(int i=0; i<nthreads; i++) {
@@ -148,18 +149,17 @@ int main(int argc, char *argv[]) {
         prod_int_conc_global += *soma_retorno_threads;
         free(soma_retorno_threads);
     }
+    GET_TIME(end);  //Terminando a contagem de tempo para o cálculo concorrente
+    delta = end-start;  //Calculando o intervalo de tempo
 
     //Imprimindo os resultados
     printf("\n");
-    #ifdef VERSOES
-    printf("soma_seq (invertida)         = %.26f\n\n", soma_seq);
-    printf("soma_seq_blocos (2 blocos)   = %.26f\n\n", soma_seq_blocos);
-    #endif
-    printf("Prod interno concorrente = %.26f\n", prod_int_conc_global);
+    printf("Prod interno concorrente = %.26lf\n", prod_int_conc_global);
+    printf("Tempo (concorrente): %lf\n", delta);
 
     //Lendo o produto interno registrado no arquivo
-    ret = fread(&prod_int_ori, sizeof(double), 1, arq); 
-    printf("\nProd interno do arquivo = %.26lf\n", prod_int_ori);
+    ret = fread(&prod_int_arq, sizeof(double), 1, arq); 
+    printf("\nProd interno lido do arquivo = %.26lf\n", prod_int_arq);
 
     //Desalocando os espacos de memoria
     free(vet1);
@@ -168,10 +168,10 @@ int main(int argc, char *argv[]) {
     fclose(arq);  //Fechando o arquivo
 
     //Calculando a variação relativa
-    variacao_relativa = (prod_int_ori - prod_int_conc_global) / prod_int_ori;
+    variacao_relativa = (prod_int_arq - prod_int_conc_global) / prod_int_arq;
     if (variacao_relativa < 0) variacao_relativa = -variacao_relativa;
 
-    printf("Variacao relativa = %.26f\n", variacao_relativa);
+    printf("Variacao relativa = %.26f\n\n", variacao_relativa);
 
     return 0;
 }

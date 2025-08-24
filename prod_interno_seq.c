@@ -15,7 +15,7 @@ o produto interno desses dois vetores e escreve a dimensão n, os dois vetores e
 
 #define MAX 1000  //Valor máximo de um elemento do vetor
 
-#define LOG    //Descomentar o define caso deseje imprimir uma versao do vetor gerado no formato texto
+//#define LOG    //Descomentar o define caso deseje imprimir uma versao do vetor gerado no formato texto
 
 int main(int argc, char*argv[]) {
    float *vetor1, *vetor2;    //Vetores que serão gerados
@@ -50,9 +50,12 @@ int main(int argc, char*argv[]) {
    srand(time(NULL));
 
    for(long int i=0; i<n; i++) {
-      elem = (rand() % MAX)/3.0 * fator;     //Aqui a forma de geração pode variar
+      elem = (rand() % MAX)/3.0;     //Aqui a forma de geração pode variar
+      if (rand() % 2 == 0) elem *= -1;   //Decidindo aleatoriamente se o número será negativo
       vetor1[i] = elem;
-      elem = (rand() % MAX)/3.0 * fator; 
+
+      elem = (rand() % MAX)/3.0; 
+      if (rand() % 2 == 0) elem *= -1;   //Decidindo aleatoriamente se o número será negativo
       vetor2[i] = elem;
 
       prod_interno += vetor1[i] * vetor2[i];    //Calcula o produto interno dos vetores
@@ -61,7 +64,7 @@ int main(int argc, char*argv[]) {
 
    //Imprimindo na saída padrão os vetores gerados e o resultado do produto interno
    #ifdef LOG
-   fprintf(stdout, "%ld\n", n);
+   fprintf(stdout, "Dimensao dos vetores: %ld\n", n);
    fprintf(stdout, "Vetor 1: ");
    for(long int i=0; i<n; i++) {
       fprintf(stdout, "%f ",vetor1[i]);
@@ -72,7 +75,7 @@ int main(int argc, char*argv[]) {
       fprintf(stdout, "%f ",vetor2[i]);
    }
    fprintf(stdout, "\n");
-   fprintf(stdout, "%lf\n", prod_interno);
+   fprintf(stdout, "Produto interno: %lf\n", prod_interno);
    #endif
 
    //Abrindo o arquivo para escrita binária
@@ -104,8 +107,4 @@ int main(int argc, char*argv[]) {
    free(vetor1);
    free(vetor2);
    return 0;
-} 
-
-
-
-//Certifique-se da corretude desse programa. Execute-o gerando arquivos de teste com diferentes valores de n e os armazene. 
+}
