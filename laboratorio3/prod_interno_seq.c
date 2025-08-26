@@ -7,6 +7,7 @@
 /*
 Programa sequencial que gera dois vetores de entrada (float) de dimensão n (long int), com valores randômicos, calcula 
 o produto interno desses dois vetores e escreve a dimensão n, os dois vetores e o resultado encontrado em um arquivo binário.
+Este código foi feito com ajuda do código "gera_vet_rand.c" disponibilizado para o laboratório 3 
 */
 
 #include <stdio.h>
@@ -15,14 +16,13 @@ o produto interno desses dois vetores e escreve a dimensão n, os dois vetores e
 
 #define MAX 1000  //Valor máximo de um elemento do vetor
 
-//#define LOG    //Descomentar o define caso deseje imprimir uma versao do vetor gerado no formato texto
+//#define LOG    //Descomentar o define caso deseje imprimir os vetores gerados
 
 int main(int argc, char*argv[]) {
    float *vetor1, *vetor2;    //Vetores que serão gerados
    long int n;  //Quantidade de elementos dos vetores
    float elem;  //Valor gerado para incluir nos vetores de forma aleatória
    double prod_interno = 0;   //Produto interno dos vetores
-   int fator=1;      //Fator multiplicador para gerar números positivos e negativos alternados nos vetores
    FILE * descritorArquivo; //Descritor do arquivo de saída
    size_t ret;    //Retorno da funcao de escrita no arquivo de saída
 
@@ -43,6 +43,7 @@ int main(int argc, char*argv[]) {
    vetor2 = (float*) malloc(sizeof(float) * n);
    if(!vetor2) {
       fprintf(stderr, "Erro de alocao da memoria do vetor2\n");
+      free(vetor1);
       return 2;
    }
 
@@ -59,7 +60,6 @@ int main(int argc, char*argv[]) {
       vetor2[i] = elem;
 
       prod_interno += vetor1[i] * vetor2[i];    //Calcula o produto interno dos vetores
-      fator*=-1;
    }
 
    //Imprimindo na saída padrão os vetores gerados e o resultado do produto interno
@@ -82,6 +82,8 @@ int main(int argc, char*argv[]) {
    descritorArquivo = fopen(argv[2], "wb");
    if(!descritorArquivo) {
       fprintf(stderr, "Erro de abertura do arquivo\n");
+      free(vetor1);
+      free(vetor2);
       return 3;
    }
    //Escrevendo a dimensão
@@ -91,11 +93,17 @@ int main(int argc, char*argv[]) {
    ret = fwrite(vetor1, sizeof(float), n, descritorArquivo);
    if(ret < n) {
       fprintf(stderr, "Erro de escrita do vetor1 no arquivo\n");
+      free(vetor1);
+      free(vetor2);
+      fclose(descritorArquivo);
       return 4;
    }
    ret = fwrite(vetor2, sizeof(float), n, descritorArquivo);
    if(ret < n) {
       fprintf(stderr, "Erro de escrita do vetor2 no arquivo\n");
+      free(vetor1);
+      free(vetor2);
+      fclose(descritorArquivo);
       return 4;
    }
 
