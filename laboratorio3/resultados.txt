@@ -1,0 +1,184 @@
+Vetor com 1000 elementos (mil)
+ sequencial
+   tempo 1° exec: 0.000003
+   tempo 2° exec: 0.000002
+   tempo 3° exec: 0.000002
+   tempo 4° exec: 0.000003
+   tempo 5° exec: 0.000003
+   tempo (médio de 5 execuções): 0.0000026 (seg)
+ 1 thread
+   tempo 1° exec: 0.000940
+   tempo 2° exec: 0.000447
+   tempo 3° exec: 0.000634
+   tempo 4° exec: 0.000495
+   tempo 5° exec: 0.000479
+   tempo (médio de 5 execuções): 0.0006 (seg)
+   var relativa 1° exec: 0.0
+   var relativa 2° exec: 0.0
+   var relativa 3° exec: 0.0
+   var relativa 4° exec: 0.0
+   var relativa 5° exec: 0.0
+   var relativa (média de 5 execuções): 0.0
+ 2 threads
+   tempo 1° exec: 0.000652
+   tempo 2° exec: 0.000539
+   tempo 3° exec: 0.000520
+   tempo 4° exec: 0.000720
+   tempo 5° exec: 0.000721
+   tempo (médio de 5 execuções): 0.00063 (seg)
+   var relativa 1° exec: 0.0
+   var relativa 2° exec: 0.0
+   var relativa 3° exec: 0.0
+   var relativa 4° exec: 0.0
+   var relativa 5° exec: 0.0
+   var relativa (média de 5 execuções): 0.0
+ 4 threads
+   tempo 1° exec: 0.000760
+   tempo 2° exec: 0.000803
+   tempo 3° exec: 0.000929
+   tempo 4° exec: 0.001023
+   tempo 5° exec: 0.000738
+   tempo (médio de 5 execuções): 0.00085 (seg)
+   var relativa 1° exec: 0.0
+   var relativa 2° exec: 0.0
+   var relativa 3° exec: 0.0
+   var relativa 4° exec: 0.0
+   var relativa 5° exec: 0.0
+   var relativa (média de 5 execuções): 0.0
+ 8 threads
+   tempo 1° exec: 0.001441
+   tempo 2° exec: 0.001429
+   tempo 3° exec: 0.001198
+   tempo 4° exec: 0.001384
+   tempo 5° exec: 0.001156
+   tempo (médio de 5 execuções): 0.0013216 (seg)
+   var relativa 1° exec: 0.0
+   var relativa 2° exec: 0.0
+   var relativa 3° exec: 0.0
+   var relativa 4° exec: 0.0
+   var relativa 5° exec: 0.0
+   var relativa (média de 5 execuções): 0.0
+    
+
+Vetor com 1000000 elementos (um milhão)
+ sequencial
+   tempo 1° exec: 0.003965
+   tempo 2° exec: 0.003374
+   tempo 3° exec: 0.003224
+   tempo 4° exec: 0.003031
+   tempo 5° exec: 0.003007
+   tempo (médio de 5 execuções): 0.0033202 (seg)
+ 1 thread
+   tempo 1° exec: 0.005117
+   tempo 2° exec: 0.003734
+   tempo 3° exec: 0.004767
+   tempo 4° exec: 0.004363
+   tempo 5° exec: 0.003529
+   tempo (médio de 5 execuções): 0.004302 (seg)
+   var relativa 1° exec: 0.0
+   var relativa 2° exec: 0.0
+   var relativa 3° exec: 0.0
+   var relativa 4° exec: 0.0
+   var relativa 5° exec: 0.0
+   var relativa (média de 5 execuções): 0.0
+ 2 threads
+   tempo 1° exec: 0.002079
+   tempo 2° exec: 0.002302
+   tempo 3° exec: 0.002321
+   tempo 4° exec: 0.002231
+   tempo 5° exec: 0.002360
+   tempo (médio de 5 execuções): 0.0022586 (seg)
+   var relativa 1° exec: 0.0
+   var relativa 2° exec: 0.0
+   var relativa 3° exec: 0.0
+   var relativa 4° exec: 0.0
+   var relativa 5° exec: 0.0
+   var relativa (média de 5 execuções): 0.0
+ 4 threads
+   tempo 1° exec: 0.001704
+   tempo 2° exec: 0.002132
+   tempo 3° exec: 0.002056
+   tempo 4° exec: 0.001977
+   tempo 5° exec: 0.001754
+   tempo (médio de 5 execuções): 0.0019246 (seg)
+   var relativa 1° exec: 0.0
+   var relativa 2° exec: 0.0
+   var relativa 3° exec: 0.0
+   var relativa 4° exec: 0.0
+   var relativa 5° exec: 0.0
+   var relativa (média de 5 execuções): 0.0
+ 8 threads
+   tempo 1° exec: 0.002539
+   tempo 2° exec: 0.002147
+   tempo 3° exec: 0.001833
+   tempo 4° exec: 0.001824
+   tempo 5° exec: 0.001654
+   tempo (médio de 5 execuções): 0.0019994 (seg)
+   var relativa 1° exec: 0.0
+   var relativa 2° exec: 0.0
+   var relativa 3° exec: 0.0
+   var relativa 4° exec: 0.0
+   var relativa 5° exec: 0.0
+   var relativa (média de 5 execuções): 0.0
+
+
+Vetor com 100000000 elementos (cem milhões)
+ sequencial
+   tempo 1° exec: 0.297996
+   tempo 2° exec: 0.307415
+   tempo 3° exec: 0.285911
+   tempo 4° exec: 0.304716
+   tempo 5° exec: 0.275593
+   tempo (médio de 5 execuções): 0.2943262 (seg)
+ 1 thread
+   tempo 1° exec: 0.313714
+   tempo 2° exec: 0.349075
+   tempo 3° exec: 0.329244
+   tempo 4° exec: 0.300625
+   tempo 5° exec: 0.281045
+   tempo (médio de 5 execuções): 0.3147406 (seg)
+   var relativa 1° exec: 0.0
+   var relativa 2° exec: 0.0
+   var relativa 3° exec: 0.0
+   var relativa 4° exec: 0.0
+   var relativa 5° exec: 0.0
+   var relativa (média de 5 execuções): 0.0
+ 2 threads
+   tempo 1° exec: 0.162931
+   tempo 2° exec: 0.167748
+   tempo 3° exec: 0.170459
+   tempo 4° exec: 0.179862
+   tempo 5° exec: 0.150936
+   tempo (médio de 5 execuções): 0.1663872 (seg)
+   var relativa 1° exec: 2e-15
+   var relativa 2° exec: 5e-15
+   var relativa 3° exec: 3e-14
+   var relativa 4° exec: 2e-14
+   var relativa 5° exec: 2e-14
+   var relativa (média de 5 execuções): 7e-14 (aproximadamente 0.0)
+ 4 threads
+   tempo 1° exec: 0.113864
+   tempo 2° exec: 0.124021
+   tempo 3° exec: 0.114930
+   tempo 4° exec: 0.121111
+   tempo 5° exec: 0.102290
+   tempo (médio de 5 execuções): 0.1152432 (seg)
+   var relativa 1° exec: 5e-14
+   var relativa 2° exec: 8e-15
+   var relativa 3° exec: 1e-15
+   var relativa 4° exec: 6e-15
+   var relativa 5° exec: 0.0
+   var relativa (média de 5 execuções): 1e-14 (aproximadamente 0.0)
+ 8 threads
+   tempo 1° exec: 0.069861
+   tempo 2° exec: 0.094051
+   tempo 3° exec: 0.085898
+   tempo 4° exec: 0.083464
+   tempo 5° exec: 0.092300
+   tempo (médio de 5 execuções): 0.0851148 (seg)
+   var relativa 1° exec: 6e-15
+   var relativa 2° exec: 1e-14
+   var relativa 3° exec: 1e-14
+   var relativa 4° exec: 1e-14
+   var relativa 5° exec: 5e-14
+   var relativa (média de 5 execuções): 8e-14 (aproximadamente 0.0)

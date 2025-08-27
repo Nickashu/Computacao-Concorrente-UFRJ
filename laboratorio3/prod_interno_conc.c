@@ -75,6 +75,12 @@ int main(int argc, char *argv[]) {
     //Recebendo os valores de entrada
     if(argc < 3) { printf("Use: %s <arquivo de entrada> <numero de threads> \n", argv[0]); exit(-1); }
 
+    nthreads = atoi(argv[2]);   //Lendo o numero de threads da entrada do usuario
+    if (nthreads < 1){
+        printf("Numero de threads invalido. Usando 1 thread.\n");
+        nthreads = 1;  //Garantindo que o numero de threads seja pelo menos 1
+    }
+
     //Abrindo o arquivo de entrada com os valores para serem somados
     arq = fopen(argv[1], "rb");
     if(arq==NULL) { 
@@ -89,6 +95,8 @@ int main(int argc, char *argv[]) {
         fclose(arq);
         return 3;
     }
+
+    if(nthreads > n) nthreads = n;  //Limitando o numero de threads ao tamanho do vetor
 
     //Alocando espaco de memoria e carregando os vetores de entrada
     vet1 = (float*) malloc (sizeof(float) * n);
@@ -119,9 +127,6 @@ int main(int argc, char *argv[]) {
         fclose(arq);
         return 4;
     }
-
-    nthreads = atoi(argv[2]);   //Lendo o numero de threads da entrada do usuario 
-    if(nthreads>n) nthreads = n;  //Limitando o numero de threads ao tamanho do vetor
 
     //Alocando espaco para o vetor de identificadores das threads no sistema
     tid_sistema = (pthread_t *) malloc(sizeof(pthread_t) * nthreads);
@@ -204,15 +209,15 @@ int main(int argc, char *argv[]) {
     }
     printf("\nProd interno lido do arquivo = %.26lf\n", prod_int_arq);
 
-    //Desalocando os espacos de memoria
+    //Desalocando os espacos de memoria e fechando o arquivo
     free(vet1);
     free(vet2);
     free(tid_sistema);
-    fclose(arq);  //Fechando o arquivo
+    fclose(arq);
 
     //Calculando a variação relativa
     variacao_relativa = (prod_int_arq - prod_int_conc_global) / prod_int_arq;
-    if (variacao_relativa < 0) variacao_relativa = -variacao_relativa;
+    if (variacao_relativa < 0) variacao_relativa = -variacao_relativa;   //Será um valor absoluto
 
     printf("Variacao relativa = %.26f\n\n", variacao_relativa);
     return 0;
