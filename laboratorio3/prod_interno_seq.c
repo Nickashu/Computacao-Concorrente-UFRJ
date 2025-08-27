@@ -32,6 +32,10 @@ int main(int argc, char*argv[]) {
       return 1;
    }
    n = atoi(argv[1]);
+   if(n < 1){
+      fprintf(stderr, "Dimensao invalida. Usando 1 como dimensao.\n");
+      n = 1;
+   }
 
    //Alocando memória para os vetores
    vetor1 = (float*) malloc(sizeof(float) * n);
