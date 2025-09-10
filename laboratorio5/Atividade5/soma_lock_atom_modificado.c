@@ -7,10 +7,11 @@
 /*
 Modificação do programa "soma-lock-atom.c" visto no laboratório 4. Na versão original, uma thread de log imprime o valor da variável 
 compartilhada 'soma' sempre que ela é múltiplo de 10. Porém, como a leitura de 'soma' não era atômica, poderia ocorrer de a thread de log ler 
-um valor de 'soma' que é múltiplo de 10, mas antes que ela imprima esse valor, outra thread incrementa 'soma', fazendo com que o valor impresso 
+um valor de 'soma' que é múltiplo de 10, mas antes dela imprima esse valor, outra thread incrementa 'soma', fazendo com que o valor impresso 
 não seja mais múltiplo de 10. Também não havia garantia de que todos os múltiplos de 10 que 'soma' poderia passar a valer eram impressos.
-Na versão atual, o código será modificado para que a leitura de 'soma' seja atômica, ou seja, que nenhuma outra thread possa modificar 'soma' enquanto 
-estamos lendo seu valor, e, usando variáveis de condição, faremos com que a thread de log imprima todos os valores de 'soma' que sejam múltiplos de 1000.
+Na versão atual, o código foi modificado para que a leitura de 'soma' seja atômica, ou seja, que nenhuma outra thread possa modificar 'soma' enquanto 
+estamos lendo e alterando seu valor, e, usando variáveis de condição, foi feito com que a thread de log imprima todos os valores de 'soma' que sejam 
+múltiplos de 1000.
 OBS: Este código foi feito com ajuda do código "soma_lock_atom.c" disponibilizado para o laboratório 4
 */
 
@@ -20,9 +21,9 @@ OBS: Este código foi feito com ajuda do código "soma_lock_atom.c" disponibiliz
 
 long int soma = 0; //variavel compartilhada entre as threads
 pthread_mutex_t mutex; //variavel de lock para exclusao mutua
-pthread_cond_t cond; //variavel de condicao para sincronizacao por condicao
+pthread_cond_t cond; //variavel para sincronizacao por condicao
 
-int liberado_para_imprimir = 0;   //Variável de controle para indicar se a thread de log pode imprimir o valor de 'soma'
+short int liberado_para_imprimir = 0;   //Variável de controle para indicar se a thread de log pode imprimir o valor de 'soma' (1: pode imprimir; 0: não pode imprimir)
 
 void *ExecutaTarefa (void *arg) {
   long int id = (long int) arg;
@@ -34,7 +35,7 @@ void *ExecutaTarefa (void *arg) {
       pthread_cond_signal(&cond);
       pthread_cond_wait(&cond, &mutex);
     }
-    soma++;  //Incrementa a variavel compartilhada
+    soma++;  //Incrementa a variável compartilhada
     if(!(soma % 1000)){  //Se for múltiplo de 1000, a execução da tarefa será pausada para que a thread de log possa imprimir o valor de 'soma'
       liberado_para_imprimir = 1;
       while(liberado_para_imprimir) { //Espera até a impressão
