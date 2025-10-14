@@ -40,7 +40,7 @@ typedef struct {
     int M;  //Tamanho do buffer
 } t_arg_cons;
 
-int ehPrimo(long long int n) {
+int ehPrimo(long long int n) {    //Função para verificar se um número é primo
     int i;
     if (n<=1) return 0;
     if (n==2) return 1;
@@ -54,7 +54,7 @@ int ehPrimo(long long int n) {
 void Insere (int qtd_insercoes, long long int N) {
     static long long int ultimo_item = 1; //Último item produzido
     sem_wait(&bufferVazio);  //Aguarda até que o buffer esteja vazio para inserir
-    sem_wait(&mutex);
+    sem_wait(&mutex);    //Esclusão mútua
     for(int i=0; i<qtd_insercoes; i++) {
         buffer[i] = ultimo_item;
         #ifdef LOG
@@ -62,8 +62,8 @@ void Insere (int qtd_insercoes, long long int N) {
         #endif
         if (ultimo_item >= N)  //Se já produziu todos os itens, indica que a produção acabou
             acabou_producao = 1;
-        ultimo_item++;
-        itens_produzidos++;
+        ultimo_item++;  //Próximo item a ser produzido
+        itens_produzidos++;    //Contabiliza o item produzido
     } 
     for(int i=0; i<qtd_insercoes; i++){   //Fazendo post para cada item inserido
         sem_post(&bufferCheio);
@@ -84,7 +84,7 @@ int Retira (int id, int tam_buffer) {
         return -1;
     }
     item = buffer[out];
-    buffer[out] = 0;
+    buffer[out] = 0;    //Marca que a posição agora está vazia
     out = (out + 1) % tam_buffer;
     #ifdef LOG
     printf("Cons[%d]: retirou %d\n", id, item);
@@ -115,7 +115,6 @@ void *produtor(void * arg) {
         }
         Insere(qtd_insercoes, N);  //Insere qtd_insercoes itens no buffer
     }
-    //printf("Produtor terminou!\n");
     pthread_exit(NULL);
 }
 
@@ -135,11 +134,10 @@ void *consumidor(void * arg) {
     if (ret!=NULL) *ret = contPrimos;
     else printf("ERRO: malloc() para retorno da thread %d\n", id);
 
-    //printf("Consumidor %d terminou!\n", id);
     pthread_exit((void*) ret);
 }
 
-void desaloca_memoria(pthread_t *tid, int *buffer) {
+void desaloca_memoria(pthread_t *tid, int *buffer) {   //Função para desalocar memória e destruir semáforos
     free(tid);
     free(buffer);
     sem_destroy(&mutex);
