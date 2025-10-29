@@ -2,10 +2,13 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <string.h>
+#include "timer.h"
+#include "aux.h"
 
 // Define o tamanho do grid
 #define SIZE 9
 #define SUBGRID_SIZE 3
+//#define LOG_RESULTS   //Comentar para desativar o log dos resultados detalhados
 
 //Structs e Variáveis Globais
 
@@ -18,55 +21,12 @@ pthread_mutex_t solution_mutex;   //Mutex para exclusão mútua
 short int solution_found = 0;   //Flag: 1 se a solução foi encontrada
 int **solution_grid;         //Matriz onde a solução final será armazenada
 
-//Funções Auxiliares
-
-//Imprimir o grid
-void print_grid(int **grid, int size) {
-    for (int r = 0; r < size; r++) {
-        for (int c = 0; c < size; c++)
-            printf("%2d", grid[r][c]);
-        printf("\n");
-    }
-}
-
-//Procura por uma célula vazia (valor 0). Retorna 1 se encontrou, 0 se o grid está cheio
-int find_empty_cell(int **grid, int size, int *row, int *col) {
-    for (*row = 0; *row < size; (*row)++) {
-        for (*col = 0; *col < size; (*col)++) {
-            if (grid[*row][*col] == 0)    //Ao sair dessa função, row e col apontarão para a primeira célula vazia encontrada
-                return 1;
-        }
-    }
-    return 0;
-}
-
-//Verifica se um número é válido em uma dada posição
-int is_valid(int **grid, int size, int size_sub_grid, int row, int col, int num) {
-    //Verifica a linha
-    for (int c = 0; c < size; c++)
-        if (grid[row][c] == num) return 0;
-
-    //Verifica a coluna
-    for (int r = 0; r < size; r++)
-        if (grid[r][col] == num) return 0;
-
-    //Verifica sub-grid
-    int startRow = row - row % size_sub_grid;
-    int startCol = col - col % size_sub_grid;
-    for (int r = 0; r < size_sub_grid; r++)
-        for (int c = 0; c < size_sub_grid; c++)
-            if (grid[r + startRow][c + startCol] == num)
-                return 0;
-    
-    return 1;
-}
-
 
 /*
 Solucionador Sequencial (Backtracking). Esta é a função que resolve o Sudoku de forma sequencial, e será chamada por 
 cada thread em sua própria cópia do grid
  */
-int solve_sequential(int **grid, int size, int size_sub_grid) {
+int solve_sudoku(int **grid, int size, int size_sub_grid) {
     int row, col;
 
     // Antes de fazer qualquer coisa, verificamos se outra thread já encontrou a solução
@@ -82,12 +42,12 @@ int solve_sequential(int **grid, int size, int size_sub_grid) {
         return 1;   //Se não há células vazias, o Sudoku está resolvido (sucesso)
     }
 
-    //Tenta números de 1 a 9
-    for (int num = 1; num <= 9; num++) {
+    //Tenta números de 1 a SIZE
+    for (int num = 1; num <= SIZE; num++) {
         if (is_valid(grid, size, size_sub_grid, row, col, num)) {   //Se a posição é válida para o número
             grid[row][col] = num;
 
-            if (solve_sequential(grid, size, size_sub_grid)) {   //Chama recursivamente
+            if (solve_sudoku(grid, size, size_sub_grid)) {   //Chama recursivamente
                 return 1;
             }
 
@@ -106,7 +66,7 @@ void* solver_thread_func(void* arg) {
     ThreadData* data = (ThreadData*) arg;   //Recebe os dados (sua cópia do grid)
 
     //Tenta resolver o Sudoku sequencialmente a partir deste ponto
-    if (solve_sequential(data->grid, data->size, data->size_sub_grid)) {
+    if (solve_sudoku(data->grid, data->size, data->size_sub_grid)) {
 
         //Se tiver sucesso, tenta registrar como a solução global
         pthread_mutex_lock(&solution_mutex);
@@ -134,7 +94,21 @@ void* solver_thread_func(void* arg) {
 
 //Função main
 int main() {
-    //Aloca memória para o grid de solução
+    double start, end, delta;   //Variáveis para controle de tempo
+    double acceleration_factor = 0.0, efficiency = 0.0;
+
+    int **immutable_puzzle_grid = (int **) malloc(SIZE * sizeof(int *));   //É necessária uma cópia imutável do grid inicial para utilizar o is_valid
+    if (immutable_puzzle_grid == NULL) { return 1; }
+    for (int i = 0; i < SIZE; i++) {
+        immutable_puzzle_grid[i] = (int *) malloc(SIZE * sizeof(int));
+        if (immutable_puzzle_grid[i] == NULL) { 
+            for (int k = 0; k < i; k++) free(immutable_puzzle_grid[k]);
+            free(immutable_puzzle_grid);
+            return 1; 
+        }
+    }
+
+    //Aloca memória para o grid de solução global
     solution_grid = (int **) malloc(SIZE * sizeof(int *));
     if (solution_grid == NULL) {
         printf("Erro na alocação de memória para a solução\n");
@@ -150,27 +124,16 @@ int main() {
         }
     }
 
-    // Um Sudoku "difícil" para testar (O 0 representa células vazias)
-    int puzzle_grid[SIZE][SIZE] = {
-        {5, 3, 4, 0, 7, 0, 0, 0, 0},
-        {6, 0, 0, 1, 9, 5, 0, 0, 0},
-        {0, 9, 8, 0, 0, 0, 0, 6, 0},
-        {8, 0, 0, 0, 6, 0, 0, 0, 3},
-        {4, 0, 0, 8, 0, 3, 0, 0, 1},
-        {7, 0, 0, 0, 2, 0, 0, 0, 6},
-        {0, 6, 0, 0, 0, 0, 2, 8, 0},
-        {0, 0, 0, 4, 1, 9, 0, 0, 5},
-        {0, 0, 0, 0, 8, 0, 0, 7, 9}
-    };
+    TestCase* all_tests = NULL;
+    int num_tests = load_test_cases(&all_tests, SIZE);
 
-    for (int i = 0; i < SIZE; i++) {  //Inicializa a solução com o grid inicial
-        memcpy(solution_grid[i], puzzle_grid[i], SIZE * sizeof(int));
+    if (num_tests == 0) {
+        printf("Nenhum caso de teste foi carregado.\n");
+        return 1;
     }
 
-    printf("--- Solucionador de Sudoku Concorrente ---\n");
-    printf("Grid Inicial:\n");
-    print_grid(solution_grid, SIZE);
-    printf("\n");
+    printf("Sucesso! %d casos de teste carregados da memória.\n", num_tests);
+    printf("--- Solucionador de Sudoku CONCORRENTE (Sudokus %dx%d) ---\n", SIZE, SIZE);
 
     // Inicializa o mutex
     if (pthread_mutex_init(&solution_mutex, NULL)) {
@@ -179,93 +142,160 @@ int main() {
         free(solution_grid);
         return 1;
     }
+    
+    //Variáveis para estatísticas dos resultados
+    double avg_time_total = 0.0, avg_time_easy = 0.0, avg_time_medium = 0.0, avg_time_hard = 0.0, avg_time_extreme = 0.0;
+    int corrects = 0, count_easy = 0, count_medium = 0, count_hard = 0, count_extreme = 0;
 
-    int row, col;
+    for (int test_index = 0; test_index < num_tests; test_index++) {
+        printf("\n--- Teste de Indice %d (Concorrente) ---\n", test_index + 1);
+        printf("Dificuldade: %s\n", get_difficulty_label(all_tests[test_index].difficulty));
 
-    if (!find_empty_cell(solution_grid, SIZE, &row, &col)) {   //Encontra a primeira célula vazia para ser o ponto de divisão
-        printf("Grid inicial já está resolvido.\n");   //Caso em que o grid já está resolvido
-        solution_found = 1;
-    }
-    else{
-        pthread_t threads[SIZE];   //Array para guardar os IDs dos threads
-        int thread_count = 0;
+        //Copiando o puzzle para a cópia imutável e para o grid de solução
+        for (int i = 0; i < SIZE; i++) {
+            memcpy(immutable_puzzle_grid[i], all_tests[test_index].puzzle[i], SIZE * sizeof(int));
+            memcpy(solution_grid[i], all_tests[test_index].puzzle[i], SIZE * sizeof(int));
+        }
 
-        //Tenta todos os números (1-9) para essa única célula
-        for (int num = 1; num <= 9; num++) {
-            if (is_valid(solution_grid, SIZE, SUBGRID_SIZE, row, col, num)) {
-                //Se o número for válido, cria uma thread para essa hipótese
-                //Aloca memória para os dados da thread
-                ThreadData* thread_data = (ThreadData*) malloc(sizeof(ThreadData));
-                if (thread_data == NULL) {
-                    printf("Erro na alocação de memória para os dados do thread\n");
-                    return 1;
-                }
-                thread_data->size = SIZE;
-                thread_data->size_sub_grid = SUBGRID_SIZE;
-                
-                //Copia o grid e insere o palpite
-                //Aloca a matriz para thread_data->grid
-                thread_data->grid = (int**) malloc(SIZE * sizeof(int*));
-                if (thread_data->grid == NULL) { free(thread_data); printf("Erro malloc\n"); return 1; }
-                for (int r = 0; r < SIZE; r++) {
-                    thread_data->grid[r] = (int*) malloc(SIZE * sizeof(int));
-                    if (thread_data->grid[r] == NULL) {
-                        for (int k = 0; k < r; k++) free(thread_data->grid[k]);
-                        free(thread_data->grid);
-                        free(thread_data);
-                        printf("Erro malloc\n");
+        #ifdef LOG_RESULTS
+        printf("Puzzle:\n");
+        print_grid(solution_grid, SIZE);
+        printf("\n");
+        #endif
+
+        //Reseta a flag global de solução para cada novo puzzle
+        solution_found = 0;
+        int row, col, thread_count = 0;
+
+        GET_TIME(start);
+
+        if (!find_empty_cell(solution_grid, SIZE, &row, &col)) {
+            printf("Grid inicial já está resolvido.\n");
+            solution_found = 1;
+            corrects++;
+        }
+        else{
+            pthread_t threads[SIZE];   //Array para guardar os IDs das threads
+
+            for (int num = 1; num <= SIZE; num++) {
+                if (is_valid(immutable_puzzle_grid, SIZE, SUBGRID_SIZE, row, col, num)) {  //Usa o grid local IMUTÁVEL para evitar condição de corrida
+                    ThreadData* thread_data = (ThreadData*) malloc(sizeof(ThreadData));
+                    if (thread_data == NULL) {
+                        printf("Erro na alocacao de memoria para os dados da thread\n");
+                        deallocate_test_cases_and_solution(SIZE, solution_grid, all_tests, num_tests);
                         return 1;
                     }
-                    memcpy(thread_data->grid[r], solution_grid[r], SIZE * sizeof(int));
+                    thread_data->size = SIZE;
+                    thread_data->size_sub_grid = SUBGRID_SIZE;
+                    
+                    thread_data->grid = (int**) malloc(SIZE * sizeof(int*));
+                    if (thread_data->grid == NULL) { free(thread_data); printf("Erro malloc\n"); return 1; }
+                    for (int r = 0; r < SIZE; r++) {
+                        thread_data->grid[r] = (int*) malloc(SIZE * sizeof(int));
+                        if (thread_data->grid[r] == NULL) {
+                            for (int k = 0; k < r; k++) free(thread_data->grid[k]);
+                            free(thread_data->grid);
+                            free(thread_data);
+                            deallocate_test_cases_and_solution(SIZE, solution_grid, all_tests, num_tests);
+                            printf("Erro malloc\n");
+                            return 1;
+                        }
+                        memcpy(thread_data->grid[r], solution_grid[r], SIZE * sizeof(int));
+                    }
+
+                    thread_data->grid[row][col] = num;
+
+                    //Cria a thread
+                    //printf("Iniciando thread para a hipótese: Célula (%d, %d) = %d\n", row, col, num);
+                    if (pthread_create(&threads[thread_count], NULL, solver_thread_func, thread_data)) {
+                        fprintf(stderr, "Erro: pthread_create falhou para hipotese %d\n", num);
+                        for (int k = 0; k < SIZE; k++) free(thread_data->grid[k]);
+                        free(thread_data->grid);
+                        free(thread_data);
+                        continue;
+                    }
+
+                    thread_count++;
                 }
+            }
+            
+            printf("%d threads de trabalho criadas. Aguardando conclusao...\n", thread_count);
 
-                thread_data->grid[row][col] = num;
-
-                //Cria a thread
-                printf("Iniciando thread para a hipótese: Célula (%d, %d) = %d\n", row, col, num);
-                if (pthread_create(&threads[thread_count], NULL, solver_thread_func, thread_data)) {
-                    fprintf(stderr, "Erro: pthread_create falhou para hipótese %d\n", num);
-                    for (int k = 0; k < SIZE; k++) free(thread_data->grid[k]);
-                    free(thread_data->grid);
-                    free(thread_data);
-                    continue;
+            //Espera todas as threads terminarem
+            for (int i = 0; i < thread_count; i++) {
+                if (pthread_join(threads[i], NULL)) {
+                    printf("Erro ao esperar thread\n");
+                    for (int k = 0; k < SIZE; k++) free(solution_grid[k]);
+                    free(solution_grid);
+                    deallocate_test_cases_and_solution(SIZE, solution_grid, all_tests, num_tests);
+                    return 1;
                 }
-
-                thread_count++;
             }
-        }
-        
-        printf("%d threads de trabalho criadas. Aguardando conclusão...\n", thread_count);
 
-        //Espera todas as threads terminarem
-        for (int i = 0; i < thread_count; i++) {
-            if (pthread_join(threads[i], NULL)) {
-                printf("Erro ao esperar thread\n");
-                for (int k = 0; k < SIZE; k++) free(solution_grid[k]);
-                free(solution_grid);
-                return 1;
-            }
+            printf("Todas as threads terminaram.\n");
         }
 
-        printf("Todas as threads terminaram.\n");
+        GET_TIME(end);
+        delta = end - start;
+
+        if (strcmp(get_difficulty_label(all_tests[test_index].difficulty), "Facil") == 0) {
+            count_easy++;
+            avg_time_easy += delta;
+        } else if (strcmp(get_difficulty_label(all_tests[test_index].difficulty), "Medio") == 0) {
+            count_medium++;
+            avg_time_medium += delta;
+        } else if (strcmp(get_difficulty_label(all_tests[test_index].difficulty), "Dificil") == 0) {
+            count_hard++;
+            avg_time_hard += delta;
+        } else if (strcmp(get_difficulty_label(all_tests[test_index].difficulty), "Extremo") == 0) {
+            count_extreme++;
+            avg_time_extreme += delta;
+        }
+        avg_time_total += delta;
+
+        //Verifica a corretude
+        if (is_correct(SIZE, solution_grid, all_tests[test_index].solution)){
+            corrects++;
+            printf("Solucao correta!\n");
+        }
+        else {
+            printf("Solucao INCORRETA!\n");
+        }
+
+        //Imprime o resultado
+        #ifdef LOG_RESULTS
+        if (solution_found) {
+            printf("Solucao Encontrada:\n");
+            print_grid(solution_grid, SIZE);
+        } 
+        else
+            printf("Nenhuma solução foi encontrada.\n");
+
+        if (thread_count > 0) {
+            printf("Número de threads usadas: %d\n", thread_count);
+        }
+        printf("Tempo de execução (Tc): %.9f segundos\n", delta);
+        #endif
+
     }
 
-
-    // Imprime o resultado
-    if (solution_found) {
-        printf("\nSolução Encontrada:\n");
-        print_grid(solution_grid, SIZE);
-    } 
-    else {
-        printf("\nNenhuma solução foi encontrada para o Sudoku.\n");
-    }
+    printf("\n--- Estatísticas de Desempenho ---\n");
+    printf("Solucoes corretas: %d de %d\n", corrects, num_tests);
+    printf("Tempo médio total: %.9f segundos\n", avg_time_total / num_tests);
+    if (count_easy > 0)
+        printf("Tempo médio (Fácil): %.9f segundos\n", avg_time_easy / count_easy);
+    if (count_medium > 0)
+        printf("Tempo médio (Médio): %.9f segundos\n", avg_time_medium / count_medium);
+    if (count_hard > 0)
+        printf("Tempo médio (Difícil): %.9f segundos\n", avg_time_hard / count_hard);
+    if (count_extreme > 0)
+        printf("Tempo médio (Extremo): %.9f segundos\n", avg_time_extreme / count_extreme);
 
     // Destrói o mutex e desaloca memória
     pthread_mutex_destroy(&solution_mutex);
-    for (int i = 0; i < SIZE; i++) {
-        free(solution_grid[i]);
-    }
-    free(solution_grid);
+    for (int i = 0; i < SIZE; i++) free(immutable_puzzle_grid[i]);
+    free(immutable_puzzle_grid);
+    deallocate_test_cases_and_solution(SIZE, solution_grid, all_tests, num_tests);
 
     return 0;
 }
