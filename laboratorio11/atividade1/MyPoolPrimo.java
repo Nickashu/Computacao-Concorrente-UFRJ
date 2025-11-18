@@ -1,6 +1,6 @@
 /* Disciplina: Computação Concorrente */
 /* Profa.: Silvana Rossetto */
-/* Laboratório 11 - Atividade 1 */
+/* Laboratório 11 - Atividade 1 item 4 */
 /* Nome: Nícolas da Mota Arruda */
 /* DRE: 122153341 */
 
@@ -16,6 +16,7 @@ class FilaTarefas {
     private final MyPoolThreads[] threads;   //Um array de workers
     private final LinkedList<Runnable> queue;   //Fila de tarefas
     private boolean shutdown;   //Indica se o pool está finalizando
+    private int totalPrimos = 0;   //Contador de números primos encontrados
 
     public FilaTarefas(int nThreads) {   //Construtor aloca e inicia as threads
         this.shutdown = false;
@@ -46,6 +47,15 @@ class FilaTarefas {
         }
     }
 
+    //Métodos auxiliares para contar o número de primos encontrados (precisam ser synchronized)
+    public synchronized void incPrimo() {
+      totalPrimos++;
+    }
+
+    public synchronized int getTotalPrimos() {
+      return totalPrimos;
+    }
+
     private class MyPoolThreads extends Thread {
        public void run() {  //Cada worker entra em um loop infinito pegando tarefas da fila e executando-as
          Runnable r;
@@ -65,51 +75,79 @@ class FilaTarefas {
     } 
 }
 
+//Classe que verifica se os números são primos
 class Primo implements Runnable {
   long numero;
+  FilaTarefas pool;
 
-  public Primo(long n) {
+  public Primo(long n, FilaTarefas pool) {
     this.numero = n;
+    this.pool = pool;
+  }
+
+  private boolean ehPrimo(long n) {
+    if(n <= 1) return false;
+    if(n == 2) return true;
+    if(n % 2 == 0) return false;
+    for(long i=3; i <= Math.sqrt(n); i+=2) {
+      if(n % i == 0) return false;
+    }
+    return true;
   }
 
   public void run() {
-    int i;
-    boolean ehPrimo = false;
-
-    if(this.numero == 2) ehPrimo = true;
-    else if(this.numero > 2){
-      if(this.numero % 2 != 0){
-        for(i=3; i< Math.sqrt(this.numero)+1; i+=2) {
-          if(this.numero % i == 0){
-            break;
-          }
-        }
-        if(i >= Math.sqrt(this.numero)+1) ehPrimo = true;
-      }
+    if(ehPrimo(this.numero)){
+      System.out.println(this.numero + " é primo.");
+      pool.incPrimo();
     }
-    
-    if(ehPrimo) System.out.println(this.numero + " é primo.");
-    else System.out.println(this.numero + " não é primo.");
+    else {
+      //System.out.println(this.numero + " não é primo.");
+    }
+  }
+}
+
+//Classe auxiliar com contagem sequencial de primos para checagem de corretude
+class PrimoSequencial {
+  private boolean ehPrimo(long n) {
+    if(n <= 1) return false;
+    if(n == 2) return true;
+    if(n % 2 == 0) return false;
+    for(long i=3; i <= Math.sqrt(n); i+=2) {
+      if(n % i == 0) return false;
+    }
+    return true;
+  }
+
+  public int contarPrimos(long inicio, long fim) {
+    int totalPrimos = 0;
+    for(long i = inicio; i <= fim; i++) {
+      if(ehPrimo(i)) totalPrimos++;
+    }
+    return totalPrimos;
   }
 }
 
 //Classe da aplicação (método main)
 class MyPoolPrimo {
-    private static final int NTHREADS = 10;
+    private static final int NTHREADS = 5;
 
     public static void main (String[] args) {
-      //--PASSO 2: cria o pool de threads
       FilaTarefas pool = new FilaTarefas(NTHREADS);
-      long tarefas = 10000;  //Número de tarefas a serem executadas (números a serem verificados)
-      
-      //--PASSO 3: dispara a execução dos objetos runnable usando o pool de threads
-      for (int i = 0; i < tarefas; i++) {
-        Runnable primo = new Primo(i);
+      long tarefas = 100000;  //Número de tarefas a serem executadas (números a serem verificados)
+
+      for (long i = 0; i < tarefas; i++) {
+        Runnable primo = new Primo(i, pool);
         pool.execute(primo);
       }
 
-      //--PASSO 4: esperar pelo termino das threads
-      pool.shutdown();
+      pool.shutdown();  //Aguarda todas as tarefas terminarem
+      System.out.println("Total de números primos encontrados (concorrente): " + pool.getTotalPrimos());
+
+      PrimoSequencial seqPrimo = new PrimoSequencial();
+      int totalSeq = seqPrimo.contarPrimos(0, tarefas - 1);
+      System.out.println("Total de números primos encontrados (sequencial): " + totalSeq);
+      if (totalSeq == pool.getTotalPrimos()) System.out.println("Contagem correta!");
+      else System.out.println("Contagem incorreta!");
       System.out.println("Terminou");
    }
 }

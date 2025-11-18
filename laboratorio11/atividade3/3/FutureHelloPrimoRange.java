@@ -48,6 +48,27 @@ class VerificaPrimos implements Callable<Integer> {
 }
 
 
+//Classe auxiliar com contagem sequencial de primos para checagem de corretude
+class PrimoSequencial {
+  private boolean ehPrimo(long n) {
+    if(n <= 1) return false;
+    if(n == 2) return true;
+    if(n % 2 == 0) return false;
+    for(long i=3; i <= Math.sqrt(n); i+=2) {
+      if(n % i == 0) return false;
+    }
+    return true;
+  }
+
+  public int contarPrimos(long inicio, long fim) {
+    int totalPrimos = 0;
+    for(long i = inicio; i <= fim; i++) {
+      if(ehPrimo(i)) totalPrimos++;
+    }
+    return totalPrimos;
+  }
+}
+
 public class FutureHelloPrimoRange  {
   private static final int NTHREADS = 10;
 
@@ -58,9 +79,10 @@ public class FutureHelloPrimoRange  {
         System.err.println("Argumento inválido para N; usando valor padrão " + N);
       }
     }
-
+    
+    //Implementando divisão de tarefas em chunks para melhorar a eficiência
     long chunk = 10000;
-    if (N / chunk < NTHREADS) chunk = Math.max(1L, N / (NTHREADS * 10));   //Ajusta o tamanho do chunk de cada tarefa se N for pequeno
+    if (N / chunk < NTHREADS) chunk = Math.max(1L, N / (NTHREADS * 10));
 
     ExecutorService executor = Executors.newFixedThreadPool(NTHREADS);   //Pool de threads
     List<Future<Integer>> list = new ArrayList<Future<Integer>>();   //Lista de futures para armazenar os resultados
@@ -85,7 +107,13 @@ public class FutureHelloPrimoRange  {
       }
     }
 
-    System.out.println("Total de primos no intervalo de 1 até " + N + ": " + totalPrimos);
+    System.out.println("Total de primos no intervalo de 1 até " + N + " (concorrente): " + totalPrimos);
+
+    PrimoSequencial seqPrimo = new PrimoSequencial();
+    int totalSeq = seqPrimo.contarPrimos(1, N);
+    System.out.println("Total de números primos encontrados (sequencial): " + totalSeq);
+    if (totalSeq == totalPrimos) System.out.println("Contagem correta!");
+    else System.out.println("Contagem incorreta!");
 
     executor.shutdown();
   }
